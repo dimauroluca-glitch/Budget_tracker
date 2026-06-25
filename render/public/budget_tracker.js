@@ -1,10 +1,20 @@
+let userIdAnonimo = localStorage.getItem('user_id_anonimo');
+if (!userIdAnonimo) {
+    userIdAnonimo = 'user_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('user_id_anonimo', userIdAnonimo);
+}
 let tot_entrate = 0;
 let tot_uscite = 0;
 let tot_tot = 0;
 let transazioni = [];
 async function caricaDatiDalServer() {
     try {
-        const response = await fetch('/dati');
+        const response = await fetch('/dati', {
+            method: 'GET',
+            headers: {
+                'X-User-ID': userIdAnonimo
+            }
+        });
         if (response.ok) {
             transazioni = await response.json();
             aggiorna();
@@ -79,7 +89,10 @@ async function aggiungi(tipo, importo, descrizione, categoria, data){
     try {
         const response = await fetch('/salva', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-User-ID': userIdAnonimo
+            },
             body: JSON.stringify(transazione)
         });
         if (response.ok) {
@@ -95,7 +108,10 @@ async function aggiungi(tipo, importo, descrizione, categoria, data){
 async function svuotaServer() {
     try {
         const response = await fetch('/cancella', { 
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'X-User-ID': userIdAnonimo
+            }
         });
         if (response.ok) {
             transazioni = [];
@@ -130,7 +146,7 @@ document.getElementById('filtro-tipo').addEventListener('change', function(){
     aggiorna();
 });
 document.getElementById('cancella-cronologia').addEventListener('click', async function(){
-    if(confirm("Sei sicuro di voler cancellare tutta la cronologia dal server cloud?")) {
+    if(confirm("Sei sicuro di voler cancellare tutta la tua cronologia dal server cloud?")) {
         await svuotaServer();
     }
 });
