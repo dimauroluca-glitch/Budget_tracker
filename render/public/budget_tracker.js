@@ -7,7 +7,19 @@ let tot_entrate = 0;
 let tot_uscite = 0;
 let tot_tot = 0;
 let transazioni = [];
+function caricaDatiLocali() {
+    const datiLocali = localStorage.getItem('transazioni_offline');
+    if (datiLocali) {
+        transazioni = JSON.parse(datiLocali);
+        aggiorna();
+    }
+}
 async function caricaDatiDalServer() {
+    caricaDatiLocali();
+    if (!navigator.onLine) {
+        console.log("Sei offline. Utilizzo i dati memorizzati in locale.");
+        return;
+    }
     try {
         const response = await fetch('/dati', {
             method: 'GET',
@@ -17,10 +29,11 @@ async function caricaDatiDalServer() {
         });
         if (response.ok) {
             transazioni = await response.json();
+            localStorage.setItem('transazioni_offline', JSON.stringify(transazioni));
             aggiorna();
         }
     } catch (errore) {
-        console.error("Errore nel recupero dei dati:", errore);
+        console.error("Errore nel recupero dei dati dal server, uso i locali:", errore);
     }
 }
 function aggiorna(){
@@ -86,6 +99,13 @@ async function aggiungi(tipo, importo, descrizione, categoria, data){
         categoria: categoria,
         data: data
     };
+    if (!navigator.onLine) {
+        transazioni.push(transazione);
+        localStorage.setItem('transazioni_offline', JSON.stringify(transazioni));
+        aggiorna();
+        alert("Salvato in locale (Modalità Offline). Verrà sincronizzato quando tornerà internet.");
+        return;
+    }
     try {
         const response = await fetch('/salva', {
             method: 'POST',
@@ -102,10 +122,19 @@ async function aggiungi(tipo, importo, descrizione, categoria, data){
         }
     } catch (errore) {
         console.error("Errore di rete:", errore);
-        alert("Impossibile connettersi al server");
+        transazioni.push(transazione);
+        localStorage.setItem('transazioni_offline', JSON.stringify(transazioni));
+        aggiorna();
     }
 }
 async function svuotaServer() {
+    transazioni = [];
+    localStorage.removeItem('transazioni_offline');
+    aggiorna();
+    if (!navigator.onLine) {
+        alert("Cronologia locale svuotata. Ricorda di farlo anche online per svuotare il server.");
+        return;
+    }
     try {
         const response = await fetch('/cancella', { 
             method: 'DELETE',
@@ -113,15 +142,11 @@ async function svuotaServer() {
                 'X-User-ID': userIdAnonimo
             }
         });
-        if (response.ok) {
-            transazioni = [];
-            aggiorna();
-        } else {
+        if (!response.ok) {
             alert("Errore durante la cancellazione sul server");
         }
     } catch (errore) {
         console.error("Errore di rete durante la cancellazione:", errore);
-        alert("Impossibile connettersi al server per cancellare");
     }
 }
 document.getElementById('bottone').addEventListener('click', function(e){
@@ -146,10 +171,11 @@ document.getElementById('filtro-tipo').addEventListener('change', function(){
     aggiorna();
 });
 document.getElementById('cancella-cronologia').addEventListener('click', async function(){
-    if(confirm("Sei sicuro di voler cancellare tutta la tua cronologia dal server cloud?")) {
+    if(confirm("Sei sicuro di voler cancellare tutta la tua cronologia?")) {
         await svuotaServer();
     }
 });
+window.addEventListener('online', caricaDatiDalServer);
 caricaDatiDalServer();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
