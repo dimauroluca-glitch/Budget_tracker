@@ -1,14 +1,8 @@
-const ASSETS_TO_CACHE = [
-  '/',
-  'index.html',
-  'budget_tracker.js'
-];
 const CACHE_NAME = 'v1_sito_offline';
 const ASSETS_TO_CACHE = [
-  '/',
+  './',
   'index.html',
-  'style.css',
-  'app.js'
+  'budget_tracker.js'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -16,7 +10,7 @@ self.addEventListener('install', event => {
       console.log('Salvataggio file statici in cache...');
       return Promise.all(
         ASSETS_TO_CACHE.map(url => {
-          return cache.add(url).catch(err => console.warn(`Impossibile salvare in cache: ${url}`, err));
+          return cache.add(url).catch(err => console.warn(`File non trovato o fallito: ${url}`, err));
         })
       );
     })
