@@ -151,3 +151,10 @@ document.getElementById('cancella-cronologia').addEventListener('click', async f
     }
 });
 caricaDatiDalServer();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('Service Worker registrato con successo!', reg))
+      .catch(err => console.error('Errore di registrazione:', err));
+  });
+}
